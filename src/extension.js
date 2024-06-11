@@ -6,12 +6,9 @@ function sleep(ms) {
 }
 
 async function scanExtensions(context) {
-    vscode.window.showInformationMessage(
-        `📡 ExtensionTotal: Running scan...`,
-        {
-            detail: `ExtensionTotal scans your environment regularly for high risk extensions.`,
-        }
-    );
+    vscode.window.showInformationMessage(`📡 ExtensionTotal: Running scan...`, {
+        detail: `ExtensionTotal scans your environment regularly for high risk extensions.`,
+    });
     for (let extension of vscode.extensions.all) {
         if (extension.id.startsWith('vscode.')) {
             continue;
@@ -20,8 +17,7 @@ async function scanExtensions(context) {
         const body = JSON.stringify({
             q: extension.id,
         });
-        console.log(`scanning ${extension.id}`);
-
+        
         // Send data
         var post_req = https.request(
             {
@@ -35,6 +31,13 @@ async function scanExtensions(context) {
                 body: body,
             },
             function (res) {
+                if (response.statusCode === 429) {
+                    vscode.window.showInformationMessage(
+                        `📡 ExtensionTotal: Free rate limit reached, email to us for an API key`
+                    );
+                    return;
+                }
+
                 let body = '';
 
                 res.on('data', (chunk) => {
@@ -45,7 +48,10 @@ async function scanExtensions(context) {
                     try {
                         const extensionData = JSON.parse(body);
                         if (extensionData.risk >= 7) {
-                            let lastTagged = context.globalState.get(`alerted-${extension.id}`, 'no');
+                            let lastTagged = context.globalState.get(
+                                `alerted-${extension.id}`,
+                                'no'
+                            );
                             if (lastTagged === 'yes') {
                                 return;
                             }
@@ -54,12 +60,20 @@ async function scanExtensions(context) {
                                 `🚨 High Risk Extension Found: ${extensionData.display_name}`,
                                 {
                                     modal: true,
-                                    detail: `ExtensionTotal found a new high risk extension "${extensionData.display_name}" installed on your machine. 
-                                    Consider reviewing the ExtensionTotal report: https://app.extensiontotal/report/${extension.id}.\n\n
+                                    detail: `ExtensionTotal found a new high risk extension "${
+                                        extensionData.display_name ||
+                                        extensionData.name
+                                    }" installed on your machine.\n\n
+                                    Consider reviewing the ExtensionTotal report: https://app.extensiontotal/report/${
+                                        extension.id
+                                    }\n\n
                                     Once confirming this message, we will no longer alert you on this extension.`,
                                 }
                             );
-                            context.globalState.update(`alerted-${extension.id}`, 'yes');
+                            context.globalState.update(
+                                `alerted-${extension.id}`,
+                                'yes'
+                            );
                         }
                     } catch (error) {
                         console.error(error.message);
@@ -67,6 +81,12 @@ async function scanExtensions(context) {
                 });
             }
         );
+
+        post_req.on('error', function (e) {
+            vscode.window.showInformationMessage(
+                `📡 ExtensionTotal: Free rate limit reached, email to us for an API key`
+            );
+        });
 
         post_req.write(body);
         post_req.end();
