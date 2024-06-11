@@ -8,7 +8,6 @@
     "license": "MIT",
     "scripts": {
         "package": "vsce package -o ./bin/extensiontotal.vsix",
-        "vscode:prepublish": "npm run build",
         "vsce-publish": "vsce publish"
     },
     "activationEvents": [
