@@ -1,0 +1,11 @@
+.github/**
+.vscode/**
+bin/**
+scripts/**
+tests/**
+.editorconfig
+.prettierrc.toml
+generate.js
+jsconfig.json
+known_issues.md
+.DS_Store

@@ -1,0 +1,48 @@
+{
+    "name": "extensiontotal-vscode",
+    "version": "1.0.0",
+    "displayName": "ExtensionTotal",
+    "homepage": "https://extensiontotal.com/",
+    "description": "Analyze suspicious Visual Studio Code extensions, navigate the extension jungle, and detect harmful code, risky access, and other security vulnerabilities.",
+    "publisher": "extensiontotal",
+    "license": "MIT",
+    "scripts": {
+        "package": "vsce package -o ./bin/extensiontotal.vsix",
+        "vscode:prepublish": "npm run build",
+        "vsce-publish": "vsce publish"
+    },
+    "activationEvents": [
+        "onStartupFinished"
+    ],
+    "main": "./src/extension.js",
+    "maintainers": [
+        "Amit Assaraf"
+    ],
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/sand-security/extensiontotal-vscode.git"
+    },
+    "bugs": {
+        "url": "https://github.com/sand-security/extensiontotal-vscode/issues"
+    },
+    "engines": {
+        "vscode": "^1.13.0"
+    },
+    "categories": [
+        "Themes"
+    ],
+    "keywords": [
+        "extensiontotal",
+        "security",
+        "sand",
+        "extension"
+    ],
+    "icon": "icon.png",
+    "galleryBanner": {
+        "color": "#6366F1",
+        "theme": "light"
+    },
+    "devDependencies": {
+        "vsce": "^2.15.0"
+    }
+}
