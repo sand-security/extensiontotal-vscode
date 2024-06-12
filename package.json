@@ -1,6 +1,6 @@
 {
     "name": "extensiontotal-vscode",
-    "version": "1.0.2",
+    "version": "1.0.3",
     "displayName": "ExtensionTotal",
     "homepage": "https://extensiontotal.com/",
     "description": "Analyze suspicious Visual Studio Code extensions, navigate the extension jungle, and detect harmful code, risky access, and other security vulnerabilities.",
@@ -36,10 +36,10 @@
         "sand",
         "extension"
     ],
-    "icon": "icon-white.png",
+    "icon": "icon.png",
     "galleryBanner": {
-        "color": "#6366F1",
-        "theme": "dark"
+        "color": "#FFFFFF",
+        "theme": "light"
     },
     "devDependencies": {
         "vsce": "^2.15.0"

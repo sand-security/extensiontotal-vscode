@@ -23,7 +23,7 @@ async function scanExtensions(context) {
             {
                 host: 'app.extensiontotal.com',
                 port: '443',
-                path: '/api/getExtensionByPackageName',
+                path: '/api/getExtensionRisk',
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -31,7 +31,7 @@ async function scanExtensions(context) {
                 body: body,
             },
             function (res) {
-                if (response.statusCode === 429) {
+                if (res.statusCode === 429) {
                     vscode.window.showInformationMessage(
                         `📡 ExtensionTotal: Free rate limit reached, email to us for an API key`
                     );
@@ -81,12 +81,6 @@ async function scanExtensions(context) {
                 });
             }
         );
-
-        post_req.on('error', function (e) {
-            vscode.window.showInformationMessage(
-                `📡 ExtensionTotal: Free rate limit reached, email to us for an API key`
-            );
-        });
 
         post_req.write(body);
         post_req.end();
