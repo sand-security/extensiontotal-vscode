@@ -45,4 +45,54 @@ For questions or support, please contact us at [amit@extensiontotal.com](mailto:
 
 ---
 
+### Example scripts for API use
+
+```powershell
+$codeExtensions = $(code --list-extensions)
+
+Write-Output += "Found $($codeExtensions.Count) extensions to check..."
+$extArray = @()
+
+foreach ($extension in $codeExtensions) {
+
+    $headers = @{ 
+        "Content-Type" = "application/json"
+        "Cookie"       = "SameSite=None"
+    }
+    
+    $payload = @{
+        "q" = $extension
+    }
+
+    $response = Invoke-WebRequest -Uri 'https://app.extensiontotal.com/api/getExtensionRisk' `
+                                    -Method Post `
+                                    -Body $( $payload | ConvertTo-Json) `
+                                    -Headers $headers
+    
+    $responseContent = $response.Content | ConvertFrom-Json
+    $extArray += $responseContent
+
+    Start-Sleep -Seconds 10
+}
+
+$extArray | Sort-Object -Property risk -Descending | Format-Table -Property display_name, version, risk, updated_at 
+```
+
+```bash
+loggedInUser=$( echo "show State:/Users/ConsoleUser" | scutil | awk '/Name :/ { print $3 }' )
+codePath="/Applications/Visual Studio Code.app/Contents/Resources/app/bin/code"
+codeExtensions=$(sudo -u "$loggedInUser" "$codePath" --list-extensions)
+
+while IFS= read -r line || [[ -n $line ]]; do
+        content=$(curl -s --location 'https://app.extensiontotal.com/api/getExtensionRisk' \
+        --header 'Content-Type: application/json' \
+        --header 'Cookie: SameSite=None' \
+        --data "{
+          \"q\": \"$line\"
+        }")
+        risk=$(jq -r '.risk' <<<"$content")
+        echo "$line - $risk"
+done < <(printf '%s' "$codeExtensions")
+```
+
 Thank you for using the VSCode ExtensionTotal Scanner! Stay secure and happy coding!
