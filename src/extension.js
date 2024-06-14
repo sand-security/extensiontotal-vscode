@@ -5,7 +5,7 @@ function sleep(ms) {
     return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-async function scanExtensions(context) {
+async function scanExtensions(context, apiKey) {
     vscode.window.showInformationMessage(`📡 ExtensionTotal: Running scan...`, {
         detail: `ExtensionTotal scans your environment regularly for high risk extensions.`,
     });
@@ -27,15 +27,20 @@ async function scanExtensions(context) {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
+                    ...(apiKey ? {'X-API-Key': apiKey}: {})
                 },
                 body: body,
             },
             function (res) {
                 if (res.statusCode === 429) {
                     vscode.window.showInformationMessage(
-                        `📡 ExtensionTotal: Free rate limit reached, email to us for an API key`
+                        `📡 ExtensionTotal: Free rate limit reached, email to us at amit@extensiontotal.com for an API key`
                     );
                     return;
+                } else if (res.statusCode === 403) {
+                    vscode.window.showErrorMessage(
+                        `📡 ExtensionTotal: Invalid API Key..`
+                    );
                 }
 
                 let body = '';
@@ -46,6 +51,12 @@ async function scanExtensions(context) {
 
                 res.on('end', () => {
                     try {
+                        if (body === "Invalid API key") {
+                            vscode.window.showErrorMessage(
+                                `📡 ExtensionTotal: Invalid API Key..`
+                            );
+                            return;
+                        }
                         const extensionData = JSON.parse(body);
                         if (extensionData.risk >= 7) {
                             let lastTagged = context.globalState.get(
@@ -85,6 +96,12 @@ async function scanExtensions(context) {
         post_req.write(body);
         post_req.end();
 
+        post_req.on('error', (e) => {
+            vscode.window.showErrorMessage(
+                `📡 ExtensionTotal: ${e.toString()}`
+            );
+        });
+
         await sleep(5000);
     }
 }
@@ -93,11 +110,25 @@ async function scanExtensions(context) {
  * @param {vscode.ExtensionContext} context
  */
 async function activate(context) {
-    await scanExtensions(context);
+    const config = vscode.workspace.getConfiguration('extensiontotal');
+    const apiKey = config.get('apiKeySetting');
+    
+    if (apiKey) {
+        vscode.window.showInformationMessage(`📡 ExtensionTotal: Detected API Key...`);
+    }
+
+    await scanExtensions(context, apiKey);
 
     vscode.extensions.onDidChange(async (event) => {
-        await scanExtensions(context);
+        await scanExtensions(context, apiKey);
     });
+
+
+  const scanHandler = async () => {
+    await scanExtensions(context, apiKey);
+  };
+
+  context.subscriptions.push(vscode.commands.registerCommand('ExtensionTotal.scan', scanHandler));
 }
 
 // This method is called when your extension is deactivated
