@@ -20,6 +20,14 @@ To install the VSCode ExtensionTotal Scanner:
 3. Search for `ExtensionTotal`.
 4. Click **Install** to add the extension to your environment.
 
+## Adding Your API Key
+
+To add your API key for ExtensionTotal:
+
+1. Open Visual Studio Code.
+2. Go to `Settings` > `Extensions` > `ExtensionTotal`.
+3. Enter your API key in the provided field.
+
 ## Usage
 
 ### Real-Time Alerts
