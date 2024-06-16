@@ -6,14 +6,18 @@ function sleep(ms) {
 }
 
 async function scanExtensions(context, apiKey) {
+    const extensions = vscode.extensions.all.filter((extension) => !extension.id.startsWith('vscode.'));
     vscode.window.showInformationMessage(`📡 ExtensionTotal: Running scan...`, {
         detail: `ExtensionTotal scans your environment regularly for high risk extensions.`,
     });
-    for (let extension of vscode.extensions.all) {
-        if (extension.id.startsWith('vscode.')) {
-            continue;
+    for (let index = 0; index < extensions.length; index++) {
+        const extension = vscode.extensions.all[index];
+        if ((index+1) % 10 === 0) {
+            vscode.window.showInformationMessage(`📡 ExtensionTotal: Running scan... ${index+1}/${extensions.length}`, {
+                detail: `ExtensionTotal scans your environment regularly for high risk extensions.`,
+            });
         }
-
+        
         const body = JSON.stringify({
             q: extension.id,
         });
@@ -102,8 +106,11 @@ async function scanExtensions(context, apiKey) {
             );
         });
 
-        await sleep(5000);
+        await sleep(1500);
     }
+    vscode.window.showInformationMessage(
+        `📡 ExtensionTotal: Finished scan.`
+    );
 }
 
 /**
