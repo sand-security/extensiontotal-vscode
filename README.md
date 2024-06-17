@@ -20,6 +20,16 @@ To install the VSCode ExtensionTotal Scanner:
 3. Search for `ExtensionTotal`.
 4. Click **Install** to add the extension to your environment.
 
+## Get an API key (Optional)
+
+ExtensionTotal API **is FREE for up to 30 requests per day**. If you need more and would like to support us, visit our [ExtensionTotal Sponsorship Page](https://buymeacoffee.com/extensiontotal.security/membership) and choose a membership that suits your needs. 
+We'll send the API key in 1-2 days to the email provided in the membership payment.
+
+Available Memberships:
+- Personal: Up to 50 requests per day
+- Plus: Up to 250 requests per day
+- Unlimited: per day :)
+
 ## Adding Your API Key
 
 To add your API key for ExtensionTotal:
