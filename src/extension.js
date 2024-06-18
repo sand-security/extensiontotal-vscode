@@ -242,7 +242,7 @@ async function activate(context) {
 
     if (!apiKey) {
         vscode.window.showInformationMessage(
-            `📡 ExtensionTotal: No API key found, get a free one at https://app.extensiontotal.app/profile`
+            `📡 ExtensionTotal: No API key found, get a free one at https://app.extensiontotal.com/profile`
         );
     }
 
