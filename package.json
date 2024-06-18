@@ -1,6 +1,6 @@
 {
     "name": "extensiontotal-vscode",
-    "version": "1.1.9",
+    "version": "1.2.0",
     "displayName": "ExtensionTotal",
     "homepage": "https://extensiontotal.com/",
     "description": "Analyze suspicious Visual Studio Code extensions, navigate the extension jungle, and detect harmful code, risky access, and other security vulnerabilities.",
@@ -77,7 +77,7 @@
                 "properties": {
                     "extensiontotal.apiKeySetting": {
                         "type": "string",
-                        "description": "Your ExtensionTotal API key (Optional, Free up to 30 extensions daily)"
+                        "description": "Your ExtensionTotal API key (Required, get at https://app.extensiontotal.com/profile)"
                     },
                     "extensiontotal.scanEveryXHours": {
                         "type": "number",
