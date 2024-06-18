@@ -1,6 +1,6 @@
 {
     "name": "extensiontotal-vscode",
-    "version": "1.1.7",
+    "version": "1.1.8",
     "displayName": "ExtensionTotal",
     "homepage": "https://extensiontotal.com/",
     "description": "Analyze suspicious Visual Studio Code extensions, navigate the extension jungle, and detect harmful code, risky access, and other security vulnerabilities.",
@@ -46,33 +46,60 @@
         "vsce": "^2.15.0"
     },
     "contributes": {
+        "viewsWelcome": [
+            {
+                "view": "explorer",
+                "contents": "In order to use ExtensionTotal, you need to get a free API key from https://app.extensiontotal.app/profile",
+                "when": "config.extensiontotal.apiKeySetting == null"
+            }
+        ],
+        "viewsContainers": {
+            "activitybar": [
+                {
+                    "id": "extensiontotalView",
+                    "title": "ExtensionTotal",
+                    "icon": "resources/icon.svg"
+                }
+            ]
+        },
+        "views": {
+            "extensiontotalView": [
+                {
+                    "id": "extensiontotal-results",
+                    "name": "ExtensionTotal Last Scan Results"
+                }
+            ]
+        },
         "configuration": [
-			{
-				"id": "extensiontotal",
-				"title": "ExtensionTotal",
-				"properties": {
-					"extensiontotal.apiKeySetting": {
-						"type": "string",
-						"description": "Your ExtensionTotal API key (Optional, Free up to 30 extensions daily)"
-					},
+            {
+                "id": "extensiontotal",
+                "title": "ExtensionTotal",
+                "properties": {
+                    "extensiontotal.apiKeySetting": {
+                        "type": "string",
+                        "description": "Your ExtensionTotal API key (Optional, Free up to 30 extensions daily)"
+                    },
                     "extensiontotal.scanEveryXHours": {
-						"type": "number",
-						"description": "Scan extensions every X hours",
+                        "type": "number",
+                        "description": "Scan extensions every X hours",
                         "default": 24
-					},
+                    },
                     "extensiontotal.scanOnlyNewVersions": {
-						"type": "boolean",
-						"description": "Scan only extensions that the version has changed",
+                        "type": "boolean",
+                        "description": "Scan only extensions that the version has changed",
                         "default": false
-					}
-				}
-			}
-		],
+                    }
+                }
+            }
+        ],
         "commands": [
             {
                 "command": "ExtensionTotal.scan",
                 "title": "ExtensionTotal: Scan installed extensions"
             }
         ]
+    },
+    "dependencies": {
+        "lodash": "^4.17.21"
     }
 }

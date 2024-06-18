@@ -1,6 +1,65 @@
 const vscode = require('vscode');
 const https = require('https');
+const fs = require('fs');
+const _ = require('lodash');
 
+class ExtensionResultProvider {
+
+	_onDidChangeTreeData = new vscode.EventEmitter();
+	onDidChangeTreeData = this._onDidChangeTreeData.event;
+
+	constructor() {
+        this.results = {};
+	}
+
+	refresh() {
+        this._onDidChangeTreeData.fire();
+	}
+
+	getTreeItem(element) {
+		return element;
+	}
+
+    addResult(extensionName, riskLabel, risk) {
+        this.results[extensionName] = new ScanResult(extensionName, riskLabel, risk, vscode.TreeItemCollapsibleState.None);
+    }
+
+	getChildren(element) {
+        if (Object.keys(this.results).length === 0) {
+			return Promise.resolve([]);
+		}
+
+		return Promise.resolve(_.orderBy(Object.values(this.results), 'risk', 'desc'));
+
+	}
+
+}
+
+class ScanResult extends vscode.TreeItem {
+
+	constructor(
+		extensionName,
+		riskLabel,
+        risk,
+		collapsibleState
+	) {
+		super(extensionName, collapsibleState);
+        this.riskLabel = riskLabel;
+        this.risk = risk;
+        this.extensionName = extensionName;
+	}
+
+	get tooltip() {
+		return `${this.extensionName} with ${this.riskLabel} risk`;
+	}
+
+	get description() {
+		return `${this.riskLabel} Risk (${this.risk.toFixed(2)})`;
+	}
+
+	contextValue = 'scan-result';
+
+}
 function sleep(ms) {
     return new Promise((resolve) => setTimeout(resolve, ms));
 }
@@ -8,14 +67,19 @@ function sleep(ms) {
 async function scanExtensions(context, apiKey, config, isManualScan = false) {
     const {
         scanOnlyNewVersion,
-        scanInterval
+        scanInterval,
+        provider
     } = config;
+
+    if (!apiKey) {
+        return;
+    }
 
     let lastScan = context.globalState.get(
         `last-extensiontotal-scan`,
         null
     );
-    if (lastScan && lastScan < (new Date().getTime() - 3 * 60 * 60 * 1000) && !isManualScan) {
+    if (scanInterval !== 0 && lastScan && lastScan < (new Date().getTime() - scanInterval * 60 * 60 * 1000) && !isManualScan) {
         return;
     }
 
@@ -45,7 +109,7 @@ async function scanExtensions(context, apiKey, config, isManualScan = false) {
                 index < extensions.length && !forceStop;
                 index++
             ) {
-                const extension = vscode.extensions.all[index];
+                const extension = extensions[index];
                 if (scanOnlyNewVersion) {
                     let lastVersion = context.globalState.get(
                         `scanned-${extension.id}`,
@@ -106,6 +170,8 @@ async function scanExtensions(context, apiKey, config, isManualScan = false) {
                                     `scanned-${extension.id}`,
                                     extension.version
                                 );
+                                provider.addResult(extensionData.display_name, extensionData.riskLabel, extensionData.risk);
+                                provider.refresh();
 
                                 if (extensionData.risk >= 7) {
                                     let lastTagged = context.globalState.get(
@@ -165,33 +231,51 @@ async function scanExtensions(context, apiKey, config, isManualScan = false) {
  * @param {vscode.ExtensionContext} context
  */
 async function activate(context) {
+    const provider = new ExtensionResultProvider();
+	vscode.window.registerTreeDataProvider('extensiontotal-results', provider);
+	
     const config = vscode.workspace.getConfiguration('extensiontotal');
     const apiKey = config.get('apiKeySetting');
     const scanOnlyNewVersion = config.get('scanOnlyNewVersions');
     const scanInterval = config.get('scanEveryXHours');
 
-    if (apiKey) {
+
+    if (!apiKey) {
         vscode.window.showInformationMessage(
-            `📡 ExtensionTotal: Detected API Key...`
+            `📡 ExtensionTotal: No API key found, get a free one at https://app.extensiontotal.app/profile`
         );
     }
 
     await scanExtensions(context, apiKey, {
         scanOnlyNewVersion,
-        scanInterval
+        scanInterval,
+        provider
     }, false);
 
     vscode.extensions.onDidChange(async (event) => {
+        const config = vscode.workspace.getConfiguration('extensiontotal');
+        const apiKey = config.get('apiKeySetting');
+        const scanOnlyNewVersion = config.get('scanOnlyNewVersions');
+        const scanInterval = config.get('scanEveryXHours');
+
+    
         await scanExtensions(context, apiKey, {
             scanOnlyNewVersion,
-            scanInterval
+            scanInterval,
+            provider
         }, false);
     });
 
     const scanHandler = async () => {
+        const config = vscode.workspace.getConfiguration('extensiontotal');
+        const apiKey = config.get('apiKeySetting');
+        const scanOnlyNewVersion = config.get('scanOnlyNewVersions');
+        const scanInterval = config.get('scanEveryXHours');
+        
         await scanExtensions(context, apiKey, {
             scanOnlyNewVersion,
-            scanInterval
+            scanInterval,
+            provider
         }, true);
     };
 
