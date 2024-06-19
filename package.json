@@ -1,6 +1,6 @@
 {
     "name": "extensiontotal-vscode",
-    "version": "1.2.0",
+    "version": "1.2.1",
     "displayName": "ExtensionTotal",
     "homepage": "https://extensiontotal.com/",
     "description": "Analyze suspicious Visual Studio Code extensions, navigate the extension jungle, and detect harmful code, risky access, and other security vulnerabilities.",
@@ -48,9 +48,8 @@
     "contributes": {
         "viewsWelcome": [
             {
-                "view": "explorer",
-                "contents": "In order to use ExtensionTotal, you need to get a free API key from https://app.extensiontotal.app/profile",
-                "when": "config.extensiontotal.apiKeySetting == null"
+                "view": "workbench.explorer.emptyView",
+                "contents": "In order to use ExtensionTotal, you need to get a free API key from https://app.extensiontotal.app/profile"
             }
         ],
         "viewsContainers": {
@@ -64,6 +63,12 @@
         },
         "views": {
             "extensiontotalView": [
+                {
+                    "type": "webview",
+                    "id": "extensiontotal-welcome",
+                    "name": "ExtensionTotal",
+                    "when": "!config.extensiontotal.apiKeySetting"
+                },
                 {
                     "id": "extensiontotal-results",
                     "name": "ExtensionTotal Last Scan Results"
