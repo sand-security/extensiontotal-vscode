@@ -78,6 +78,7 @@ foreach ($extension in $codeExtensions) {
     $headers = @{ 
         "Content-Type" = "application/json"
         "Cookie"       = "SameSite=None"
+        "X-API-Key"       = "API_KEY_HERE"
     }
     
     $payload = @{
@@ -106,6 +107,7 @@ codeExtensions=$(sudo -u "$loggedInUser" "$codePath" --list-extensions)
 while IFS= read -r line || [[ -n $line ]]; do
         content=$(curl -s --location 'https://app.extensiontotal.com/api/getExtensionRisk' \
         --header 'Content-Type: application/json' \
+        --header 'X-API-Key: API_KEY_HERE' \
         --header 'Cookie: SameSite=None' \
         --data "{
           \"q\": \"$line\"
