@@ -261,6 +261,7 @@ async function scanExtensions(context, apiKey, config, isManualScan = false) {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
+                            'X-Origin': 'Extension',
                             ...(apiKey ? { 'X-API-Key': apiKey } : {}),
                         },
                         body: body,
