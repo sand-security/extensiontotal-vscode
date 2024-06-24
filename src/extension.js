@@ -25,6 +25,7 @@ class ExtensionResultProvider {
         this.results = {};
         for (let result of savedResults) {
             this.results[result.extensionName] = new ScanResult(
+                result.extensionId,
                 result.extensionName,
                 result.riskLabel,
                 result.risk,
@@ -33,7 +34,11 @@ class ExtensionResultProvider {
         }
     }
 
-    refresh() {
+    refresh(resetResults = false) {
+        if (resetResults) {
+            this.results = {};
+            this.context.globalState.update(`extensiontotal-scan-results`, undefined);
+        }
         this._onDidChangeTreeData.fire();
     }
 
@@ -41,8 +46,9 @@ class ExtensionResultProvider {
         return element;
     }
 
-    addResult(extensionName, riskLabel, risk) {
+    addResult(extensionId, extensionName, riskLabel, risk) {
         this.results[extensionName] = new ScanResult(
+            extensionId,
             extensionName,
             riskLabel,
             risk,
@@ -57,7 +63,7 @@ class ExtensionResultProvider {
                         '[]'
                     )
                 ),
-                { extensionName, riskLabel, risk },
+                { extensionId, extensionName, riskLabel, risk },
             ])
         );
     }
@@ -171,9 +177,10 @@ class WelcomeViewProvider {
 }
 
 class ScanResult extends vscode.TreeItem {
-    constructor(extensionName, riskLabel, risk, collapsibleState) {
+    constructor(extensionId, extensionName, riskLabel, risk, collapsibleState) {
         super(extensionName, collapsibleState);
         this.riskLabel = riskLabel;
+        this.extensionId = extensionId;
         this.risk = risk;
         this.extensionName = extensionName;
     }
@@ -218,6 +225,8 @@ async function scanExtensions(context, apiKey, config, isManualScan = false) {
         (extension) => !extension.id.startsWith('vscode.')
     );
 
+    let foundHigh = false;
+
     await vscode.window.withProgress(
         {
             location: vscode.ProgressLocation.Notification,
@@ -225,6 +234,7 @@ async function scanExtensions(context, apiKey, config, isManualScan = false) {
             cancellable: true,
         },
         async (progress, token) => {
+            provider.refresh(true);
             let forceStop = false;
             token.onCancellationRequested(() => {
                 forceStop = true;
@@ -269,7 +279,7 @@ async function scanExtensions(context, apiKey, config, isManualScan = false) {
                     function (res) {
                         if (res.statusCode === 429) {
                             vscode.window.showInformationMessage(
-                                `📡 ExtensionTotal: Free rate limit reached, email to us at amit@extensiontotal.com for an API key`
+                                `📡 ExtensionTotal: Free rate limit reached, visit https://app.extensiontotal.com/sponsor for an API key`
                             );
                             return;
                         } else if (res.statusCode === 403) {
@@ -298,6 +308,7 @@ async function scanExtensions(context, apiKey, config, isManualScan = false) {
                                     extension.version
                                 );
                                 provider.addResult(
+                                    extension.id,
                                     extensionData.display_name,
                                     extensionData.riskLabel,
                                     extensionData.risk
@@ -313,6 +324,7 @@ async function scanExtensions(context, apiKey, config, isManualScan = false) {
                                         return;
                                     }
 
+                                    foundHigh = true;
                                     vscode.window.showInformationMessage(
                                         `🚨 High Risk Extension Found: ${extensionData.display_name}`,
                                         {
@@ -353,7 +365,12 @@ async function scanExtensions(context, apiKey, config, isManualScan = false) {
         }
     );
 
-    vscode.window.showInformationMessage(`📡 ExtensionTotal: Finished scan.`);
+    if (foundHigh) {
+        vscode.window.showInformationMessage(`📡 ExtensionTotal: Finished scan with high risk findings 🚨 Please review results in the ExtensionTotal pane.`);
+    } else {
+        vscode.window.showInformationMessage(`📡 ExtensionTotal: Finished scan with no high risk findings. Review results in the ExtensionTotal pane.`);
+    }
+    
 }
 
 function reloadAccordingToConfig(context, providers) {
@@ -374,6 +391,16 @@ function reloadAccordingToConfig(context, providers) {
             provider
         )
     );
+
+    const options = {
+        treeDataProvider: provider
+    };
+
+    const tree = vscode.window.createTreeView('extensiontotal-results', options);
+    tree.onDidChangeSelection(e => {
+        const selected = e.selection[0];
+        vscode.env.openExternal(vscode.Uri.parse(`https://app.extensiontotal.com/report/${selected.extensionId}`));
+    });
 
     if (!apiKey) {
         vscode.window.showInformationMessage(
