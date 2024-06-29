@@ -226,6 +226,7 @@ async function scanExtensions(context, apiKey, config, isManualScan = false) {
     );
 
     let foundHigh = false;
+    let limitReached = false;
 
     await vscode.window.withProgress(
         {
@@ -278,6 +279,7 @@ async function scanExtensions(context, apiKey, config, isManualScan = false) {
                     },
                     function (res) {
                         if (res.statusCode === 429) {
+                            limitReached = true;
                             vscode.window.showInformationMessage(
                                 `📡 ExtensionTotal: Free rate limit reached, visit https://app.extensiontotal.com/sponsor for an API key`
                             );
@@ -359,6 +361,10 @@ async function scanExtensions(context, apiKey, config, isManualScan = false) {
                         `📡 ExtensionTotal: ${e.toString()}`
                     );
                 });
+
+                if (limitReached) {
+                    break;
+                }
 
                 await sleep(1500);
             }
@@ -449,7 +455,12 @@ async function activate(context) {
         vscode.commands.registerCommand('ExtensionTotal.scan', scanHandler)
     );
 
-    scanHandler();
+    const config = vscode.workspace.getConfiguration('extensiontotal');
+    const scanOnStartup = config.get('scanOnStartup');
+        
+    if (scanOnStartup) {
+        scanHandler();
+    }
 }
 
 // This method is called when your extension is deactivated

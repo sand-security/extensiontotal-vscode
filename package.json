@@ -1,6 +1,6 @@
 {
     "name": "extensiontotal-vscode",
-    "version": "1.2.5",
+    "version": "1.2.8",
     "displayName": "ExtensionTotal",
     "homepage": "https://extensiontotal.com/",
     "description": "Analyze suspicious Visual Studio Code extensions, navigate the extension jungle, and detect harmful code, risky access, and other security vulnerabilities.",
@@ -96,6 +96,11 @@
                         "type": "boolean",
                         "description": "Scan only extensions that the version has changed",
                         "default": false
+                    },
+                    "extensiontotal.scanOnStartup": {
+                        "type": "boolean",
+                        "description": "Scan extensions when VSCode starts up",
+                        "default": true
                     }
                 }
             }
