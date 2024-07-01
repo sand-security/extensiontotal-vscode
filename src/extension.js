@@ -423,7 +423,7 @@ async function activate(context) {
     const provider = new ExtensionResultProvider(context);
     const welcomeProvider = new WelcomeViewProvider(context.extensionUri);
 
-    const scanHandler = async () => {
+    const scanHandler = async (isManualScan = false) => {
         const config = vscode.workspace.getConfiguration('extensiontotal');
         const apiKey = config.get('apiKeySetting');
         const scanOnlyNewVersion = config.get('scanOnlyNewVersions');
@@ -437,7 +437,7 @@ async function activate(context) {
                 scanInterval,
                 provider,
             },
-            true
+            isManualScan
         );
     };
 
@@ -448,18 +448,18 @@ async function activate(context) {
     });
 
     vscode.extensions.onDidChange(async (event) => {
-        await scanHandler();
+        await scanHandler(false);
     });
 
     context.subscriptions.push(
-        vscode.commands.registerCommand('ExtensionTotal.scan', scanHandler)
+        vscode.commands.registerCommand('ExtensionTotal.scan', () => scanHandler(true))
     );
 
     const config = vscode.workspace.getConfiguration('extensiontotal');
     const scanOnStartup = config.get('scanOnStartup');
         
     if (scanOnStartup) {
-        scanHandler();
+        scanHandler(false);
     }
 }
 
