@@ -115,3 +115,7 @@ done < <(printf '%s' "$codeExtensions")
 ```
 
 Thank you for using the VSCode ExtensionTotal Scanner! Stay secure and happy coding!
+
+We do not collect any personal information or data regarding the user or the usage of the ExtensionTotal extension, with the exception of the API key necessary for the extension's functionality and the non-sensitive extension IDs. 
+
+All rights reserved to Extension Total LTD. By using this extension you agree to the [privacy policy](https://www.extensiontotal.com/privacy-policy) and [terms of service](https://www.extensiontotal.com/terms-of-service).
