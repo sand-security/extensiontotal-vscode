@@ -69,8 +69,7 @@
                 {
                     "type": "webview",
                     "id": "extensiontotal-welcome",
-                    "name": "ExtensionTotal",
-                    "when": "!config.extensiontotal.apiKeySetting"
+                    "name": "ExtensionTotal"
                 },
                 {
                     "id": "extensiontotal-results",
@@ -83,10 +82,6 @@
                 "id": "extensiontotal",
                 "title": "ExtensionTotal",
                 "properties": {
-                    "extensiontotal.apiKeySetting": {
-                        "type": "string",
-                        "description": "Your ExtensionTotal API key (Required, get at https://app.extensiontotal.com/profile)"
-                    },
                     "extensiontotal.scanEveryXHours": {
                         "type": "number",
                         "description": "Scan extensions every X hours",
@@ -109,6 +104,10 @@
             {
                 "command": "ExtensionTotal.scan",
                 "title": "ExtensionTotal: Scan installed extensions"
+            },
+            {
+                "command": "ExtensionTotal.setApiKey",
+                "title": "ExtensionTotal: Set API key"
             }
         ]
     },
