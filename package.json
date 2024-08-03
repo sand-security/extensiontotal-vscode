@@ -1,12 +1,12 @@
 {
     "name": "extensiontotal-vscode",
-    "version": "1.3.2",
+    "version": "1.3.3",
     "displayName": "ExtensionTotal",
     "homepage": "https://extensiontotal.com/",
     "description": "Analyze suspicious Visual Studio Code extensions, navigate the extension jungle, and detect harmful code, risky access, and other security vulnerabilities.",
     "publisher": "extensiontotal",
     "sponsor": {
-        "url": "https://buymeacoffee.com/extensiontotal.security"
+        "url": "https://extensiontotal.lemonsqueezy.com/"
     },
     "license": "MIT",
     "scripts": {

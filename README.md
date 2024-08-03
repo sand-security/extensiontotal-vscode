@@ -24,7 +24,7 @@ To install the VSCode ExtensionTotal Scanner:
 
 ExtensionTotal's Extension **is FREE for PERSONAL USE (limited at 250 requests per day)**. To begin get your API key at [ExtensionTotal Website](https://app.extensiontotal.com/profile)
 
-For organizational use or direct API access, visit our [ExtensionTotal Sponsorship Page](https://buymeacoffee.com/extensiontotal.security/membership) and choose a membership that suits your needs. 
+For organizational use or direct API access, visit our [ExtensionTotal Sponsorship Page](https://extensiontotal.lemonsqueezy.com/).
 We'll send the API key in 1-2 days to the email provided in the membership payment.
 
 Note: Organizations must purchase an API key for direct API use.
