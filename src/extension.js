@@ -2,6 +2,7 @@ const vscode = require('vscode');
 const https = require('https');
 const fs = require('fs');
 const _ = require('lodash');
+const APIKeyManager = require('./apiKeyManager');
 
 function getNonce() {
     let text = '';
@@ -84,8 +85,10 @@ class WelcomeViewProvider {
 
     _view;
 
-    constructor(_extensionUri) {
-        this._extensionUri = _extensionUri;
+    constructor(_context, _apiKeyManager) {
+        this._context = _context;
+        this._extensionUri = _context.extensionUri;
+        this._apiKeyManager = _apiKeyManager;
     }
 
     resolveWebviewView(webviewView, context, _token) {
@@ -101,16 +104,9 @@ class WelcomeViewProvider {
         webviewView.webview.html = this._getHtmlForWebview(webviewView.webview);
 
         webviewView.webview.onDidReceiveMessage(async (data) => {
-            console.log(data);
             switch (data.type) {
                 case 'apiKeySet': {
-                    const config = vscode.workspace.getConfiguration();
-                    const target = vscode.ConfigurationTarget.Global; // Update the setting locally
-                    await config.update(
-                        'extensiontotal.apiKeySetting',
-                        data.value,
-                        target
-                    );
+                    await this._apiKeyManager.setApiKey(data.value);
                     break;
                 }
             }
@@ -166,7 +162,7 @@ class WelcomeViewProvider {
                 <h2 style="display: flex; align-items: center; justify-content: center"><img width="22px" height="22px" src="${logoUri}" />&nbsp;ExtensionTotal</h2>
                 <p>Welcome to ExtensionTotal, a free community tool to assess the risk of Visual Studio Code extensions. To begin enter your API key below.</p>
                 <br/>
-				<input class="api-key-input" placeholder="API Key..."></input>
+				<input class="api-key-input" placeholder="API Key..." type="password"></input>
                 <button class="add-api-key-button">Set API Key</button>
                 <br/>
                 <a href="https://app.extensiontotal.com/profile" style="color: #6567f0">Don't have an API key yet? get a free one here</a>
@@ -227,6 +223,7 @@ async function scanExtensions(context, apiKey, config, isManualScan = false) {
 
     let foundHigh = false;
     let limitReached = false;
+    let invalidApiKey = false;
 
     await vscode.window.withProgress(
         {
@@ -243,7 +240,7 @@ async function scanExtensions(context, apiKey, config, isManualScan = false) {
             const incrementBy = 100 / extensions.length;
             for (
                 let index = 0;
-                index < extensions.length && !forceStop;
+                index < extensions.length && !forceStop && !invalidApiKey;
                 index++
             ) {
                 const extension = extensions[index];
@@ -263,106 +260,110 @@ async function scanExtensions(context, apiKey, config, isManualScan = false) {
                     q: extension.id,
                 });
 
-                // Send data
-                var post_req = https.request(
-                    {
-                        host: 'app.extensiontotal.com',
-                        port: '443',
-                        path: '/api/getExtensionRisk',
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'X-Origin': 'Extension',
-                            ...(apiKey ? { 'X-API-Key': apiKey } : {}),
+                await new Promise((resolve, _) => {
+                    var post_req = https.request(
+                        {
+                            host: 'app.extensiontotal.com',
+                            port: '443',
+                            path: '/api/getExtensionRisk',
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-Origin': 'Extension',
+                                ...(apiKey ? { 'X-API-Key': apiKey } : {}),
+                            },
                         },
-                        body: body,
-                    },
-                    function (res) {
-                        if (res.statusCode === 429) {
-                            limitReached = true;
-                            vscode.window.showInformationMessage(
-                                `📡 ExtensionTotal: Free rate limit reached, visit https://app.extensiontotal.com/sponsor for an API key`
-                            );
-                            return;
-                        } else if (res.statusCode === 403) {
-                            vscode.window.showErrorMessage(
-                                `📡 ExtensionTotal: Invalid API Key..`
-                            );
-                        }
-
-                        let body = '';
-
-                        res.on('data', (chunk) => {
-                            body += chunk;
-                        });
-
-                        res.on('end', () => {
-                            try {
-                                if (body === 'Invalid API key') {
-                                    vscode.window.showErrorMessage(
-                                        `📡 ExtensionTotal: Invalid API Key..`
-                                    );
-                                    return;
-                                }
-                                const extensionData = JSON.parse(body);
-                                context.globalState.update(
-                                    `scanned-${extension.id}`,
-                                    extension.version
+                        function (res) {
+                            if (res.statusCode === 429) {
+                                limitReached = true;
+                                vscode.window.showInformationMessage(
+                                    `📡 ExtensionTotal: Free rate limit reached, visit https://app.extensiontotal.com/sponsor for an API key`
                                 );
-                                provider.addResult(
-                                    extension.id,
-                                    extensionData.display_name,
-                                    extensionData.riskLabel,
-                                    extensionData.risk
-                                );
-                                provider.refresh();
+                                resolve();
+                                return;
+                            } else if (res.statusCode === 403) {
+                                invalidApiKey = true;  // invalid API key
+                                resolve();
+                                return;
+                            }
 
-                                if (extensionData.risk >= 7) {
-                                    let lastTagged = context.globalState.get(
-                                        `alerted-${extension.id}`,
-                                        'no'
-                                    );
-                                    if (lastTagged === 'yes') {
+                            let body = '';
+
+                            res.on('data', (chunk) => {
+                                body += chunk;
+                            });
+
+                            res.on('end', () => {
+                                try {
+                                    if (body === 'Invalid API key') {
+                                        invalidApiKey = true;  // invalid API key
+                                        resolve();
                                         return;
                                     }
-
-                                    foundHigh = true;
-                                    vscode.window.showInformationMessage(
-                                        `🚨 High Risk Extension Found: ${extensionData.display_name}`,
-                                        {
-                                            modal: true,
-                                            detail: `ExtensionTotal found a new high risk extension "${
-                                                extensionData.display_name ||
-                                                extensionData.name
-                                            }" installed on your machine.\n\n
-                                        Consider reviewing the ExtensionTotal report: https://app.extensiontotal/report/${
-                                            extension.id
-                                        }\n\n
-                                        Once confirming this message, we will no longer alert you on this extension.`,
-                                        }
-                                    );
+                                    const extensionData = JSON.parse(body);
                                     context.globalState.update(
-                                        `alerted-${extension.id}`,
-                                        'yes'
+                                        `scanned-${extension.id}`,
+                                        extension.version
                                     );
+                                    provider.addResult(
+                                        extension.id,
+                                        extensionData.display_name,
+                                        extensionData.riskLabel,
+                                        extensionData.risk
+                                    );
+                                    provider.refresh();
+
+                                    if (extensionData.risk >= 7) {
+                                        let lastTagged = context.globalState.get(
+                                            `alerted-${extension.id}`,
+                                            'no'
+                                        );
+                                        if (lastTagged === 'yes') {
+                                            resolve();
+                                            return;
+                                        }
+
+                                        foundHigh = true;
+                                        vscode.window.showInformationMessage(
+                                            `🚨 High Risk Extension Found: ${extensionData.display_name}`,
+                                            {
+                                                modal: true,
+                                                detail: `ExtensionTotal found a new high risk extension "${
+                                                    extensionData.display_name ||
+                                                    extensionData.name
+                                                }" installed on your machine.\n\n
+                                            Consider reviewing the ExtensionTotal report: https://app.extensiontotal/report/${
+                                                extension.id
+                                            }\n\n
+                                            Once confirming this message, we will no longer alert you on this extension.`,
+                                            }
+                                        );
+                                        context.globalState.update(
+                                            `alerted-${extension.id}`,
+                                            'yes'
+                                        );
+                                    }
+                                    resolve();
+                                } catch (error) {
+                                    console.error(error.message);
+                                    resolve();
                                 }
-                            } catch (error) {
-                                console.error(error.message);
-                            }
-                        });
-                    }
-                );
-
-                post_req.write(body);
-                post_req.end();
-
-                post_req.on('error', (e) => {
-                    vscode.window.showErrorMessage(
-                        `📡 ExtensionTotal: ${e.toString()}`
+                            });
+                        }
                     );
+
+                    post_req.write(body);
+                    post_req.end();
+
+                    post_req.on('error', (e) => {
+                        vscode.window.showErrorMessage(
+                            `📡 ExtensionTotal: ${e.toString()}`
+                        );
+                        resolve();
+                    });
                 });
 
-                if (limitReached) {
+                if (limitReached || invalidApiKey) {
                     break;
                 }
 
@@ -371,17 +372,18 @@ async function scanExtensions(context, apiKey, config, isManualScan = false) {
         }
     );
 
-    if (foundHigh) {
+    if (invalidApiKey) {
+        vscode.window.showErrorMessage(
+            `📡 ExtensionTotal: Scan aborted due to invalid API key. Please re-enter your API key in the ExtensionTotal panel.`
+        );
+    } else if (foundHigh) {
         vscode.window.showInformationMessage(`📡 ExtensionTotal: Finished scan with high risk findings 🚨 Please review results in the ExtensionTotal pane.`);
     } else {
         vscode.window.showInformationMessage(`📡 ExtensionTotal: Finished scan with no high risk findings. Review results in the ExtensionTotal pane.`);
     }
-    
 }
 
 function reloadAccordingToConfig(context, providers) {
-    const config = vscode.workspace.getConfiguration('extensiontotal');
-    const apiKey = config.get('apiKeySetting');
     const { provider, welcomeProvider } = providers;
 
     context.subscriptions.push(
@@ -407,12 +409,6 @@ function reloadAccordingToConfig(context, providers) {
         const selected = e.selection[0];
         vscode.env.openExternal(vscode.Uri.parse(`https://app.extensiontotal.com/report/${selected.extensionId}`));
     });
-
-    if (!apiKey) {
-        vscode.window.showInformationMessage(
-            `📡 ExtensionTotal: No API key found, get one at https://app.extensiontotal.com/profile`
-        );
-    }
 }
 
 /**
@@ -420,18 +416,27 @@ function reloadAccordingToConfig(context, providers) {
  */
 
 async function activate(context) {
+    const apiKeyManager = new APIKeyManager(context);
+    await apiKeyManager.initialize();
+
     const provider = new ExtensionResultProvider(context);
-    const welcomeProvider = new WelcomeViewProvider(context.extensionUri);
+    const welcomeProvider = new WelcomeViewProvider(context, apiKeyManager);
+
+    if (!await apiKeyManager.getApiKey()) {
+        vscode.window.showInformationMessage(
+            `📡 ExtensionTotal: No API key found, Please set your API key in the ExtensionTotal panel.`
+        );
+    }
 
     const scanHandler = async (isManualScan = false) => {
         const config = vscode.workspace.getConfiguration('extensiontotal');
-        const apiKey = config.get('apiKeySetting');
         const scanOnlyNewVersion = config.get('scanOnlyNewVersions');
         const scanInterval = config.get('scanEveryXHours');
+        const currentApiKey = await apiKeyManager.getApiKey();
 
         await scanExtensions(
             context,
-            apiKey,
+            currentApiKey,
             {
                 scanOnlyNewVersion,
                 scanInterval,
@@ -454,6 +459,18 @@ async function activate(context) {
     context.subscriptions.push(
         vscode.commands.registerCommand('ExtensionTotal.scan', () => scanHandler(true))
     );
+
+    context.subscriptions.push(
+        vscode.commands.registerCommand('ExtensionTotal.setApiKey', async () => {
+            const newApiKey = await vscode.window.showInputBox({
+                prompt: "Enter your ExtensionTotal API Key",
+                password: true
+            });
+            if (newApiKey) {
+                await apiKeyManager.setApiKey(newApiKey);
+            }
+        })
+    )
 
     const config = vscode.workspace.getConfiguration('extensiontotal');
     const scanOnStartup = config.get('scanOnStartup');

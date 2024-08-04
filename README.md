@@ -31,11 +31,25 @@ Note: Organizations must purchase an API key for direct API use.
 
 ## Adding Your API Key
 
-To add your API key for ExtensionTotal:
+To use ExtensionTotal, you need to add your API key. There are two ways to do this:
+
+### Method 1: Using the ExtensionTotal Panel
 
 1. Open Visual Studio Code.
-2. Go to `Settings` > `Extensions` > `ExtensionTotal`.
-3. Enter your API key in the provided field.
+2. In the Activity Bar, click on the ExtensionTotal icon.
+3. In the ExtensionTotal panel that appears, expand the `ExtensionTotal` tab.
+4. Enter your API key in the provided input field.
+5. Click the `Set API Key` button to save your API key.
+
+### Method 2: Using the Command Palette
+
+1. Open Visual Studio Code.
+2. Press `Ctrl+Shift+P` (Windows/Linux) or `Cmd+Shift+P` (Mac) to open the Command Palette.
+3. Type `ExtensionTotal: Set API Key` and select it from the list.
+4. In the input box that appears, enter your API key.
+5. Press Enter to save your API key.
+
+After setting your API key using either method, ExtensionTotal will be ready to use. If you need to obtain an API key, visit [https://app.extensiontotal.com/profile](https://app.extensiontotal.com/profile).
 
 ## Usage
 
