@@ -4,3 +4,6 @@ node_modules/
 bin/
 *.vsix
 .DS_Store
+out
+dist
+.vscode-test/
