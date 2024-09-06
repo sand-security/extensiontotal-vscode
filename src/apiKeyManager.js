@@ -23,7 +23,7 @@ class APIKeyManager {
         vscode.window.showInformationMessage('📡 ExtensionTotal: API key has been set successfully.');
     }
 
-    async getApiKey() {
+    getApiKey() {
         return this._currentApiKey;
     }
 }

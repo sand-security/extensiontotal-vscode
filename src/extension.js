@@ -412,7 +412,7 @@ function reloadAccordingToConfig(context, providers) {
 }
 
 async function transitionApiKey(apiKeyManager) {
-    if (await apiKeyManager.getApiKey()) {
+    if (apiKeyManager.getApiKey()) {
         console.log('api key found')
         return
     }
@@ -442,7 +442,7 @@ async function activate(context) {
 
     await transitionApiKey(apiKeyManager)
 
-    if (!await apiKeyManager.getApiKey()) {
+    if (!apiKeyManager.getApiKey()) {
         vscode.window.showInformationMessage(
             `📡 ExtensionTotal: No API key found, Please set your API key in the ExtensionTotal panel.`
         );
@@ -452,7 +452,7 @@ async function activate(context) {
         const config = vscode.workspace.getConfiguration('extensiontotal');
         const scanOnlyNewVersion = config.get('scanOnlyNewVersions');
         const scanInterval = config.get('scanEveryXHours');
-        const currentApiKey = await apiKeyManager.getApiKey();
+        const currentApiKey = apiKeyManager.getApiKey();
 
         await scanExtensions(
             context,
