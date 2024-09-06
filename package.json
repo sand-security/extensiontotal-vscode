@@ -11,13 +11,19 @@
     "license": "MIT",
     "scripts": {
         "package": "vsce package -o ./bin/extensiontotal.vsix",
-        "vsce-publish": "vsce publish"
+        "vsce-publish": "vsce publish",
+        "vscode:prepublish": "npm run compile",
+        "compile": "tsc -p ./",
+        "watch": "tsc -watch -p ./",
+        "pretest": "npm run compile && npm run lint",
+        "lint": "eslint src",
+        "test": "vscode-test"
     },
     "activationEvents": [
         "onStartupFinished",
         "onCommand:ExtensionTotal.scan"
     ],
-    "main": "./src/extension.js",
+    "main": "./out/extension.js",
     "maintainers": [
         "Amit Assaraf"
     ],
@@ -44,9 +50,6 @@
     "galleryBanner": {
         "color": "#FFFFFF",
         "theme": "light"
-    },
-    "devDependencies": {
-        "vsce": "^2.15.0"
     },
     "contributes": {
         "viewsWelcome": [
@@ -117,5 +120,16 @@
     },
     "dependencies": {
         "lodash": "^4.17.21"
+    },
+    "devDependencies": {
+        "@types/vscode": "^1.93.0",
+        "@types/mocha": "^10.0.7",
+        "@types/node": "20.x",
+        "@typescript-eslint/eslint-plugin": "^8.3.0",
+        "@typescript-eslint/parser": "^8.3.0",
+        "eslint": "^9.9.1",
+        "typescript": "^5.5.4",
+        "@vscode/test-cli": "^0.0.10",
+        "@vscode/test-electron": "^2.4.1"
     }
 }
