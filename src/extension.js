@@ -411,16 +411,36 @@ function reloadAccordingToConfig(context, providers) {
     });
 }
 
+async function transitionApiKey(apiKeyManager) {
+    if (await apiKeyManager.getApiKey()) {
+        console.log('api key found')
+        return
+    }
+    const config = vscode.workspace.getConfiguration('extensiontotal');
+    const target = vscode.ConfigurationTarget.Global;
+    const apiKey = config.get('apiKeySetting');
+    console.log(`found old apiKey ${apiKey}`)
+    if (apiKey) {
+        await apiKeyManager.setApiKey(apiKey)
+    }
+    await config.update(
+        'apiKeySetting',
+        '',
+        target
+    );
+}
+
 /**
  * @param {vscode.ExtensionContext} context
  */
-
 async function activate(context) {
     const apiKeyManager = new APIKeyManager(context);
     await apiKeyManager.initialize();
 
     const provider = new ExtensionResultProvider(context);
     const welcomeProvider = new WelcomeViewProvider(context, apiKeyManager);
+
+    await transitionApiKey(apiKeyManager)
 
     if (!await apiKeyManager.getApiKey()) {
         vscode.window.showInformationMessage(
