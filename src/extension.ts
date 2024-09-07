@@ -6,7 +6,12 @@ import { ExtensionResultProvider } from "./ExtensionResultProvider";
 import { sleep } from "./utils";
 import { WelcomeViewProvider } from "./WelcomeViewProvider";
 
-async function scanExtensions(context, apiKey, config, isManualScan = false) {
+async function scanExtensions(
+  context: vscode.ExtensionContext,
+  apiKey: string,
+  config,
+  isManualScan = false
+) {
   const { scanOnlyNewVersion, scanInterval, provider } = config;
 
   if (!apiKey) {
@@ -194,7 +199,7 @@ async function scanExtensions(context, apiKey, config, isManualScan = false) {
   }
 }
 
-function reloadAccordingToConfig(context, providers) {
+function reloadAccordingToConfig(context: vscode.ExtensionContext, providers) {
   const { provider, welcomeProvider } = providers;
 
   context.subscriptions.push(
@@ -223,7 +228,7 @@ function reloadAccordingToConfig(context, providers) {
   });
 }
 
-async function transitionApiKey(apiKeyManager) {
+async function transitionApiKey(apiKeyManager: APIKeyManager) {
   if (apiKeyManager.getApiKey()) {
     return;
   }
