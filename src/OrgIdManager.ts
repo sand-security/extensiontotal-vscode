@@ -15,6 +15,7 @@ export class OrgIdManager {
   }
 
   async initialize() {
+    console.log("searching for org id");
     await this.checkOrgIdSecret();
     if (this.orgId) return;
     if (isMac()) {
@@ -35,6 +36,7 @@ export class OrgIdManager {
 
   private async setOrgId(newOrgId) {
     if (newOrgId) {
+      console.log("org id found, operating in org mode");
       await this.context.secrets.store(this.SECRET_NAME, newOrgId);
       this.orgId = newOrgId;
     }
