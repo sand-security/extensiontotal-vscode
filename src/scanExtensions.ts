@@ -1,4 +1,5 @@
 import vscode from "vscode";
+import os from "os";
 
 import { ExtensionResultProvider } from "./ExtensionResultProvider";
 import { sleep, sendHttpsRequest } from "./utils";
@@ -10,10 +11,11 @@ export async function scanExtensions(
     scanOnlyNewVersion: boolean;
     scanInterval: number;
     provider: ExtensionResultProvider;
+    isOrgMode: boolean;
   },
   isManualScan = false
 ) {
-  const { scanOnlyNewVersion, scanInterval, provider } = config;
+  const { scanOnlyNewVersion, scanInterval, provider, isOrgMode } = config;
 
   if (!apiKey) {
     return;
@@ -59,23 +61,22 @@ export async function scanExtensions(
       index++
     ) {
       const extension = extensions[index];
-      console.log(`running now on the extension ${extension.id}`);
       if (scanOnlyNewVersion && !isManualScan) {
         let lastVersion = context.globalState.get(
           `scanned-${extension.id}`,
           null
         );
-        console.log(lastVersion);
         if (lastVersion === extension.packageJSON.version) {
-          console.log("not scanning this");
           continue;
         }
       }
 
       progress.report({ increment: incrementBy });
-      console.log("will send the request soon...");
+
       const requestBody = {
         q: extension.id,
+        version: extension.packageJSON.version,
+        orgData: getOrgData(isOrgMode),
       };
       const requestOptions = {
         host: "app.extensiontotal.com",
@@ -89,7 +90,6 @@ export async function scanExtensions(
         },
       };
       const scanResult = await sendHttpsRequest(requestOptions, requestBody);
-      console.log("got scan results");
 
       const scanStatusFlags = handleExtensionScanResult(
         extension,
@@ -131,7 +131,6 @@ function handleExtensionScanResult(
   provider: ExtensionResultProvider
 ): { limitReached?: boolean; foundHigh?: boolean; invalidApiKey?: boolean } {
   const { statusCode, data, error } = scanResult;
-  console.log(`handeling extension ${extension.id} result`);
   if (error) {
     vscode.window.showErrorMessage(`📡 ExtensionTotal: ${error.toString()}`);
     return {};
@@ -210,4 +209,13 @@ function alertHighRiskExtensionIfNeeded(
     return true;
   }
   return false;
+}
+
+function getOrgData(
+  isOrgMode: boolean
+): { hostname: string; username: string } | undefined {
+  if (!isOrgMode) {
+    return;
+  }
+  return { hostname: os.hostname(), username: os.userInfo().username };
 }
