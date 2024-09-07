@@ -3,10 +3,14 @@ import vscode from "vscode";
 import { APIKeyManager } from "./ApiKeyManager";
 import { ExtensionResultProvider } from "./ExtensionResultProvider";
 import { scanExtensions } from "./scanExtensions";
+import { OrgIdManager } from "./OrgIdManager";
 import { WelcomeViewProvider } from "./WelcomeViewProvider";
 
 export async function activate(context: vscode.ExtensionContext) {
-  const apiKeyManager = new APIKeyManager(context);
+  const orgIdManager = new OrgIdManager(context);
+  await orgIdManager.initialize();
+
+  const apiKeyManager = new APIKeyManager(context, orgIdManager.orgId);
   await apiKeyManager.initialize();
 
   const provider = new ExtensionResultProvider(context);
@@ -25,6 +29,7 @@ export async function activate(context: vscode.ExtensionContext) {
     const scanOnlyNewVersion: boolean = config.get("scanOnlyNewVersions");
     const scanInterval: number = config.get("scanEveryXHours");
     const currentApiKey = apiKeyManager.getApiKey();
+    const isOrgMode = orgIdManager.isOrgMode()
 
     await scanExtensions(
       context,
@@ -33,6 +38,7 @@ export async function activate(context: vscode.ExtensionContext) {
         scanOnlyNewVersion,
         scanInterval,
         provider,
+        isOrgMode
       },
       isManualScan
     );
@@ -111,10 +117,10 @@ async function transitionApiKey(apiKeyManager: APIKeyManager) {
   }
   const config = vscode.workspace.getConfiguration("extensiontotal");
   const target = vscode.ConfigurationTarget.Global;
-  const apiKey = config.get("apiKeySetting");
+  const apiKey: string = config.get("apiKeySetting");
   console.log(`found old apiKey ${apiKey}`);
   if (apiKey) {
-    await apiKeyManager.setApiKey(apiKey);
+    await apiKeyManager.quietSetApiKey(apiKey);
   }
   await config.update("apiKeySetting", "", target);
 }
