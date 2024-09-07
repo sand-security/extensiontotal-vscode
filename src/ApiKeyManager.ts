@@ -1,6 +1,6 @@
 import vscode from "vscode";
 
-export default class APIKeyManager {
+export class APIKeyManager {
   SECRET_NAME = "extensiontotal.apiKey";
   _context;
   _currentApiKey;

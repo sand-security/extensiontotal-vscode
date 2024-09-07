@@ -1,9 +1,9 @@
 import https from "https";
-import _ from "lodash";
 import vscode from "vscode";
-import APIKeyManager from "./apiKeyManager";
-import { sleep } from "./utils";
+
+import { APIKeyManager } from "./ApiKeyManager";
 import { ExtensionResultProvider } from "./ExtensionResultProvider";
+import { sleep } from "./utils";
 import { WelcomeViewProvider } from "./WelcomeViewProvider";
 
 async function scanExtensions(context, apiKey, config, isManualScan = false) {
