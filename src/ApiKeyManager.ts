@@ -15,6 +15,10 @@ export class APIKeyManager {
     this.currentApiKey = await this.context.secrets.get(this.SECRET_NAME);
   }
 
+  async quietSetApiKey(newApiKey: string) {
+    await this.context.secrets.store(this.SECRET_NAME, newApiKey);
+    this.currentApiKey = newApiKey;
+  }
   async setApiKey(newApiKey: string) {
     if (!newApiKey) {
       vscode.window.showWarningMessage(
@@ -22,8 +26,7 @@ export class APIKeyManager {
       );
       return;
     }
-    await this.context.secrets.store(this.SECRET_NAME, newApiKey);
-    this.currentApiKey = newApiKey;
+    await this.quietSetApiKey(newApiKey);
     vscode.window.showInformationMessage(
       "📡 ExtensionTotal: API key has been set successfully."
     );
