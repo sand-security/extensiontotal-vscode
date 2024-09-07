@@ -1,7 +1,6 @@
-import https from "https";
 import vscode from "vscode";
 
-import { sleep } from "./utils";
+import { sleep, sendHttpsRequest } from "./utils";
 
 export async function scanExtensions(
   context: vscode.ExtensionContext,
@@ -67,106 +66,62 @@ export async function scanExtensions(
 
       progress.report({ increment: incrementBy });
 
-      const body = JSON.stringify({
+      const requestBody = JSON.stringify({
         q: extension.id,
       });
+      const requestOptions = {
+        host: "app.extensiontotal.com",
+        port: "443",
+        path: "/api/getExtensionRisk",
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Origin": "Extension",
+          ...(apiKey ? { "X-API-Key": apiKey } : {}),
+        },
+      };
+      const { statusCode, data, error } = await sendHttpsRequest(
+        requestOptions,
+        requestBody
+      );
 
-      await new Promise<void>((resolve, _) => {
-        var post_req = https.request(
-          {
-            host: "app.extensiontotal.com",
-            port: "443",
-            path: "/api/getExtensionRisk",
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              "X-Origin": "Extension",
-              ...(apiKey ? { "X-API-Key": apiKey } : {}),
-            },
-          },
-          function (res) {
-            if (res.statusCode === 429) {
-              limitReached = true;
-              vscode.window.showInformationMessage(
-                `📡 ExtensionTotal: Free rate limit reached, visit https://app.extensiontotal.com/sponsor for an API key`
-              );
-              resolve();
-              return;
-            } else if (res.statusCode === 403) {
-              invalidApiKey = true; // invalid API key
-              resolve();
-              return;
-            }
-
-            let body = "";
-
-            res.on("data", (chunk) => {
-              body += chunk;
-            });
-
-            res.on("end", () => {
-              try {
-                if (body === "Invalid API key") {
-                  invalidApiKey = true; // invalid API key
-                  resolve();
-                  return;
-                }
-                const extensionData = JSON.parse(body);
-                context.globalState.update(
-                  `scanned-${extension.id}`,
-                  extension.packageJSON.version
-                );
-                provider.addResult(
-                  extension.id,
-                  extensionData.display_name,
-                  extensionData.riskLabel,
-                  extensionData.risk
-                );
-                provider.refresh();
-
-                if (extensionData.risk >= 7) {
-                  let lastTagged = context.globalState.get(
-                    `alerted-${extension.id}`,
-                    "no"
-                  );
-                  if (lastTagged === "yes") {
-                    resolve();
-                    return;
-                  }
-
-                  foundHigh = true;
-                  vscode.window.showInformationMessage(
-                    `🚨 High Risk Extension Found: ${extensionData.display_name}`,
-                    {
-                      modal: true,
-                      detail: `ExtensionTotal found a new high risk extension "${
-                        extensionData.display_name || extensionData.name
-                      }" installed on your machine.\n\n
-                                              Consider reviewing the ExtensionTotal report: https://app.extensiontotal/report/${
-                                                extension.id
-                                              }\n\n
-                                              Once confirming this message, we will no longer alert you on this extension.`,
-                    }
-                  );
-                  context.globalState.update(`alerted-${extension.id}`, "yes");
-                }
-                resolve();
-              } catch (error) {
-                console.error(error.message);
-                resolve();
-              }
-            });
-          }
+      if (error) {
+        vscode.window.showErrorMessage(
+          `📡 ExtensionTotal: ${error.toString()}`
         );
+      } else if (statusCode === 429) {
+        limitReached = true;
+        vscode.window.showInformationMessage(
+          `📡 ExtensionTotal: Free rate limit reached, visit https://app.extensiontotal.com/sponsor for an API key`
+        );
+        return;
+      } else if (statusCode === 403 || data === "Invalid API key") {
+        invalidApiKey = true;
+        return;
+      } else {
+        try {
+          const extensionData = JSON.parse(data);
+          context.globalState.update(
+            `scanned-${extension.id}`,
+            extension.packageJSON.version
+          );
+          provider.addResult(
+            extension.id,
+            extensionData.display_name,
+            extensionData.riskLabel,
+            extensionData.risk
+          );
+          provider.refresh();
 
-        post_req.write(body);
-        post_req.end();
-
-        post_req.on("error", (e) => {
-          vscode.window.showErrorMessage(`📡 ExtensionTotal: ${e.toString()}`);
-          resolve();
-        });
-      });
+          foundHigh = alertHighRiskExtensionIfNeeded(
+            extension.id,
+            extensionData,
+            context
+          );
+        } catch (error) {
+          console.error(error.message);
+        }
+      }
 
       if (limitReached || invalidApiKey) {
         break;
@@ -191,4 +146,30 @@ export async function scanExtensions(
   }
 }
 
-async function sendScanRequest() {}
+function alertHighRiskExtensionIfNeeded(
+  extensionId: string,
+  extensionData: any,
+  context: vscode.ExtensionContext
+): boolean {
+  if (extensionData.risk >= 7) {
+    let lastTagged = context.globalState.get(`alerted-${extensionId}`, "no");
+    if (lastTagged === "yes") {
+      return false;
+    }
+
+    vscode.window.showInformationMessage(
+      `🚨 High Risk Extension Found: ${extensionData.display_name}`,
+      {
+        modal: true,
+        detail: `ExtensionTotal found a new high risk extension "${
+          extensionData.display_name || extensionData.name
+        }" installed on your machine.\n\n
+        Consider reviewing the ExtensionTotal report: https://app.extensiontotal/report/${extensionId}\n\n
+        Once confirming this message, we will no longer alert you on this extension.`,
+      }
+    );
+    context.globalState.update(`alerted-${extensionId}`, "yes");
+    return true;
+  }
+  return false;
+}
