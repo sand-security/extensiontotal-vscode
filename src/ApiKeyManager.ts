@@ -1,34 +1,35 @@
 import vscode from "vscode";
 
 export class APIKeyManager {
-  SECRET_NAME = "extensiontotal.apiKey";
-  _context;
-  _currentApiKey;
+  private SECRET_NAME = "extensiontotal.apiKey";
+  private context: vscode.ExtensionContext;
+  private currentApiKey: string;
+  private orgId: string;
 
-  constructor(context) {
-    this._context = context;
-    this._currentApiKey = null;
+  constructor(context: vscode.ExtensionContext, orgId?: string) {
+    this.context = context;
+    this.orgId = orgId;
   }
 
   async initialize() {
-    this._currentApiKey = await this._context.secrets.get(this.SECRET_NAME);
+    this.currentApiKey = await this.context.secrets.get(this.SECRET_NAME);
   }
 
-  async setApiKey(newApiKey) {
+  async setApiKey(newApiKey: string) {
     if (!newApiKey) {
       vscode.window.showWarningMessage(
         `📡 ExtensionTotal: No API key found. Please set your API key in the ExtensionTotal panel.`
       );
       return;
     }
-    await this._context.secrets.store(this.SECRET_NAME, newApiKey);
-    this._currentApiKey = newApiKey;
+    await this.context.secrets.store(this.SECRET_NAME, newApiKey);
+    this.currentApiKey = newApiKey;
     vscode.window.showInformationMessage(
       "📡 ExtensionTotal: API key has been set successfully."
     );
   }
 
   getApiKey() {
-    return this._currentApiKey;
+    return this.orgId || this.currentApiKey;
   }
 }
