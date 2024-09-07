@@ -24,7 +24,7 @@ export class OrgIdManager {
     }
   }
 
-  get isOrgMode() {
+  isOrgMode() {
     return !!this.orgId;
   }
 
