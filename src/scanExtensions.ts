@@ -75,7 +75,6 @@ export async function scanExtensions(
 
       const requestBody = {
         q: extension.id,
-        version: extension.packageJSON.version,
         orgData: getOrgData(isOrgMode),
       };
       const requestOptions = {
