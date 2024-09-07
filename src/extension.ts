@@ -1,8 +1,8 @@
-import vscode from "vscode";
 import https from "https";
 import _ from "lodash";
+import vscode from "vscode";
 import APIKeyManager from "./apiKeyManager";
-import { getNonce } from "./utils";
+import { getNonce, sleep } from "./utils";
 
 class ExtensionResultProvider {
   _onDidChangeTreeData = new vscode.EventEmitter();
@@ -188,9 +188,6 @@ class ScanResult extends vscode.TreeItem {
   }
 
   contextValue = "scan-result";
-}
-function sleep(ms) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 async function scanExtensions(context, apiKey, config, isManualScan = false) {

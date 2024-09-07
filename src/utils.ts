@@ -7,3 +7,7 @@ export function getNonce() {
   }
   return text;
 }
+
+export function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
