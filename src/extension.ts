@@ -29,6 +29,7 @@ export async function activate(context: vscode.ExtensionContext) {
     const scanOnlyNewVersion: boolean = config.get("scanOnlyNewVersions");
     const scanInterval: number = config.get("scanEveryXHours");
     const currentApiKey = apiKeyManager.getApiKey();
+    const isOrgMode = orgIdManager.isOrgMode()
 
     await scanExtensions(
       context,
@@ -37,6 +38,7 @@ export async function activate(context: vscode.ExtensionContext) {
         scanOnlyNewVersion,
         scanInterval,
         provider,
+        isOrgMode
       },
       isManualScan
     );
@@ -118,7 +120,7 @@ async function transitionApiKey(apiKeyManager: APIKeyManager) {
   const apiKey: string = config.get("apiKeySetting");
   console.log(`found old apiKey ${apiKey}`);
   if (apiKey) {
-    await apiKeyManager.setApiKey(apiKey);
+    await apiKeyManager.quietSetApiKey(apiKey);
   }
   await config.update("apiKeySetting", "", target);
 }
