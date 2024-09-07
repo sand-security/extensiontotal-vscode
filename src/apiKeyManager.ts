@@ -1,10 +1,10 @@
-const vscode = require('vscode');
+import vscode from 'vscode';
 
-class APIKeyManager {
+export default class APIKeyManager {
     SECRET_NAME = 'extensiontotal.apiKey';
     _context
     _currentApiKey
-    
+
     constructor(context) {
         this._context = context;
         this._currentApiKey = null;
@@ -30,5 +30,3 @@ class APIKeyManager {
         return this._currentApiKey;
     }
 }
-
-module.exports = APIKeyManager;

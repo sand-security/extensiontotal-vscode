@@ -1,8 +1,7 @@
-const vscode = require('vscode');
-const https = require('https');
-const fs = require('fs');
-const _ = require('lodash');
-const APIKeyManager = require('./apiKeyManager');
+import vscode from 'vscode';
+import https from 'https';
+import _ from 'lodash';
+import APIKeyManager from './apiKeyManager';
 
 function getNonce() {
     let text = '';
