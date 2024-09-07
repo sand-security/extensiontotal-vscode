@@ -2,16 +2,7 @@ import vscode from "vscode";
 import https from "https";
 import _ from "lodash";
 import APIKeyManager from "./apiKeyManager";
-
-function getNonce() {
-  let text = "";
-  const possible =
-    "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
-  for (let i = 0; i < 32; i++) {
-    text += possible.charAt(Math.floor(Math.random() * possible.length));
-  }
-  return text;
-}
+import { getNonce } from "./utils";
 
 class ExtensionResultProvider {
   _onDidChangeTreeData = new vscode.EventEmitter();
@@ -41,7 +32,7 @@ class ExtensionResultProvider {
       this.results = {};
       this.context.globalState.update(`extensiontotal-scan-results`, undefined);
     }
-    this._onDidChangeTreeData.fire();
+    this._onDidChangeTreeData.fire(undefined);
   }
 
   getTreeItem(element) {
@@ -173,6 +164,11 @@ class WelcomeViewProvider {
 }
 
 class ScanResult extends vscode.TreeItem {
+  riskLabel;
+  extensionId;
+  risk;
+  extensionName;
+
   constructor(extensionId, extensionName, riskLabel, risk, collapsibleState) {
     super(extensionName, collapsibleState);
     this.riskLabel = riskLabel;
@@ -181,10 +177,12 @@ class ScanResult extends vscode.TreeItem {
     this.extensionName = extensionName;
   }
 
+  // @ts-ignore
   get tooltip() {
     return `${this.extensionName} with ${this.riskLabel} risk`;
   }
 
+  // @ts-ignore
   get description() {
     return `${this.riskLabel} Risk (${this.risk.toFixed(2)})`;
   }
@@ -246,7 +244,7 @@ async function scanExtensions(context, apiKey, config, isManualScan = false) {
             `scanned-${extension.id}`,
             null
           );
-          if (lastVersion === extension.version) {
+          if (lastVersion === extension.packageJSON.version) {
             continue;
           }
         }
@@ -300,7 +298,7 @@ async function scanExtensions(context, apiKey, config, isManualScan = false) {
                   const extensionData = JSON.parse(body);
                   context.globalState.update(
                     `scanned-${extension.id}`,
-                    extension.version
+                    extension.packageJSON.version
                   );
                   provider.addResult(
                     extension.id,
@@ -403,7 +401,7 @@ function reloadAccordingToConfig(context, providers) {
 
   const tree = vscode.window.createTreeView("extensiontotal-results", options);
   tree.onDidChangeSelection((e) => {
-    const selected = e.selection[0];
+    const selected: any = e.selection[0];
     vscode.env.openExternal(
       vscode.Uri.parse(
         `https://app.extensiontotal.com/report/${selected.extensionId}`
@@ -414,7 +412,6 @@ function reloadAccordingToConfig(context, providers) {
 
 async function transitionApiKey(apiKeyManager) {
   if (apiKeyManager.getApiKey()) {
-    console.log("api key found");
     return;
   }
   const config = vscode.workspace.getConfiguration("extensiontotal");
@@ -430,7 +427,7 @@ async function transitionApiKey(apiKeyManager) {
 /**
  * @param {vscode.ExtensionContext} context
  */
-async function activate(context) {
+export async function activate(context) {
   const apiKeyManager = new APIKeyManager(context);
   await apiKeyManager.initialize();
 
@@ -500,9 +497,4 @@ async function activate(context) {
 }
 
 // This method is called when your extension is deactivated
-function deactivate() {}
-
-module.exports = {
-  activate,
-  deactivate,
-};
+export function deactivate() {}
