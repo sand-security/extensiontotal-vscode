@@ -1,11 +1,16 @@
 import vscode from "vscode";
 
+import { ExtensionResultProvider } from "./ExtensionResultProvider";
 import { sleep, sendHttpsRequest } from "./utils";
 
 export async function scanExtensions(
   context: vscode.ExtensionContext,
   apiKey: string,
-  config,
+  config: {
+    scanOnlyNewVersion: boolean;
+    scanInterval: number;
+    provider: ExtensionResultProvider;
+  },
   isManualScan = false
 ) {
   const { scanOnlyNewVersion, scanInterval, provider } = config;
@@ -54,21 +59,24 @@ export async function scanExtensions(
       index++
     ) {
       const extension = extensions[index];
-      if (scanOnlyNewVersion) {
+      console.log(`running now on the extension ${extension.id}`);
+      if (scanOnlyNewVersion && !isManualScan) {
         let lastVersion = context.globalState.get(
           `scanned-${extension.id}`,
           null
         );
+        console.log(lastVersion);
         if (lastVersion === extension.packageJSON.version) {
+          console.log("not scanning this");
           continue;
         }
       }
 
       progress.report({ increment: incrementBy });
-
-      const requestBody = JSON.stringify({
+      console.log("will send the request soon...");
+      const requestBody = {
         q: extension.id,
-      });
+      };
       const requestOptions = {
         host: "app.extensiontotal.com",
         port: "443",
@@ -80,48 +88,18 @@ export async function scanExtensions(
           ...(apiKey ? { "X-API-Key": apiKey } : {}),
         },
       };
-      const { statusCode, data, error } = await sendHttpsRequest(
-        requestOptions,
-        requestBody
+      const scanResult = await sendHttpsRequest(requestOptions, requestBody);
+      console.log("got scan results");
+
+      const scanStatusFlags = handleExtensionScanResult(
+        extension,
+        scanResult,
+        context,
+        provider
       );
-
-      if (error) {
-        vscode.window.showErrorMessage(
-          `📡 ExtensionTotal: ${error.toString()}`
-        );
-      } else if (statusCode === 429) {
-        limitReached = true;
-        vscode.window.showInformationMessage(
-          `📡 ExtensionTotal: Free rate limit reached, visit https://app.extensiontotal.com/sponsor for an API key`
-        );
-        return;
-      } else if (statusCode === 403 || data === "Invalid API key") {
-        invalidApiKey = true;
-        return;
-      } else {
-        try {
-          const extensionData = JSON.parse(data);
-          context.globalState.update(
-            `scanned-${extension.id}`,
-            extension.packageJSON.version
-          );
-          provider.addResult(
-            extension.id,
-            extensionData.display_name,
-            extensionData.riskLabel,
-            extensionData.risk
-          );
-          provider.refresh();
-
-          foundHigh = alertHighRiskExtensionIfNeeded(
-            extension.id,
-            extensionData,
-            context
-          );
-        } catch (error) {
-          console.error(error.message);
-        }
-      }
+      limitReached = !!scanStatusFlags.limitReached;
+      invalidApiKey = !!scanStatusFlags.invalidApiKey;
+      foundHigh = !!scanStatusFlags.foundHigh;
 
       if (limitReached || invalidApiKey) {
         break;
@@ -143,6 +121,66 @@ export async function scanExtensions(
     vscode.window.showInformationMessage(
       `📡 ExtensionTotal: Finished scan with no high risk findings. Review results in the ExtensionTotal pane.`
     );
+  }
+}
+
+function handleExtensionScanResult(
+  extension: vscode.Extension<any>,
+  scanResult: any,
+  context: vscode.ExtensionContext,
+  provider: ExtensionResultProvider
+): { limitReached?: boolean; foundHigh?: boolean; invalidApiKey?: boolean } {
+  const { statusCode, data, error } = scanResult;
+  console.log(`handeling extension ${extension.id} result`);
+  if (error) {
+    vscode.window.showErrorMessage(`📡 ExtensionTotal: ${error.toString()}`);
+    return {};
+  } else if (statusCode === 429) {
+    vscode.window.showInformationMessage(
+      `📡 ExtensionTotal: Free rate limit reached, visit https://app.extensiontotal.com/sponsor for an API key`
+    );
+    return { limitReached: true };
+  } else if (statusCode === 403 || data === "Invalid API key") {
+    return { invalidApiKey: true };
+  } else {
+    const foundHigh = handleSuccessfulExtensionScanResult(
+      extension,
+      data,
+      context,
+      provider
+    );
+    return { foundHigh };
+  }
+}
+
+function handleSuccessfulExtensionScanResult(
+  extension: vscode.Extension<any>,
+  scanData: any,
+  context: vscode.ExtensionContext,
+  provider: ExtensionResultProvider
+) {
+  try {
+    const extensionData = JSON.parse(scanData);
+    context.globalState.update(
+      `scanned-${extension.id}`,
+      extension.packageJSON.version
+    );
+    provider.addResult(
+      extension.id,
+      extensionData.display_name,
+      extensionData.riskLabel,
+      extensionData.risk
+    );
+    provider.refresh();
+
+    const foundHigh = alertHighRiskExtensionIfNeeded(
+      extension.id,
+      extensionData,
+      context
+    );
+    return foundHigh;
+  } catch (error) {
+    console.error(error.message);
   }
 }
 

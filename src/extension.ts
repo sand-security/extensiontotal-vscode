@@ -22,8 +22,8 @@ export async function activate(context: vscode.ExtensionContext) {
 
   const scanHandler = async (isManualScan = false) => {
     const config = vscode.workspace.getConfiguration("extensiontotal");
-    const scanOnlyNewVersion = config.get("scanOnlyNewVersions");
-    const scanInterval = config.get("scanEveryXHours");
+    const scanOnlyNewVersion: boolean = config.get("scanOnlyNewVersions");
+    const scanInterval: number = config.get("scanEveryXHours");
     const currentApiKey = apiKeyManager.getApiKey();
 
     await scanExtensions(
