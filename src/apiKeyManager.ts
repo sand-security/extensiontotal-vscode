@@ -2,6 +2,9 @@ const vscode = require('vscode');
 
 class APIKeyManager {
     SECRET_NAME = 'extensiontotal.apiKey';
+    _context
+    _currentApiKey
+    
     constructor(context) {
         this._context = context;
         this._currentApiKey = null;

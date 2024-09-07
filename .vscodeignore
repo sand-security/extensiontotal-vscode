@@ -9,3 +9,13 @@ generate.js
 jsconfig.json
 known_issues.md
 .DS_Store
+.vscode-test/**
+src/**
+.gitignore
+.yarnrc
+vsc-extension-quickstart.md
+**/tsconfig.json
+**/eslint.config.mjs
+**/*.map
+**/*.ts
+**/.vscode-test.*

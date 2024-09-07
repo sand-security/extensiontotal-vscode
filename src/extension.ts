@@ -17,6 +17,8 @@ function getNonce() {
 class ExtensionResultProvider {
     _onDidChangeTreeData = new vscode.EventEmitter();
     onDidChangeTreeData = this._onDidChangeTreeData.event;
+    context
+    results
 
     constructor(context) {
         this.context = context;
@@ -82,7 +84,9 @@ class ExtensionResultProvider {
 
 class WelcomeViewProvider {
     viewType = 'extensiontotal-welcome';
-
+    _context;
+    _extensionUri
+    _apiKeyManager
     _view;
 
     constructor(_context, _apiKeyManager) {
@@ -260,7 +264,7 @@ async function scanExtensions(context, apiKey, config, isManualScan = false) {
                     q: extension.id,
                 });
 
-                await new Promise((resolve, _) => {
+                await new Promise<void>((resolve, _) => {
                     var post_req = https.request(
                         {
                             host: 'app.extensiontotal.com',
